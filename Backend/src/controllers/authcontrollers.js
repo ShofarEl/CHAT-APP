@@ -60,25 +60,12 @@ export const Signup = async (req, res) => {
     });
   }
 };
-
 export const Signin = async (req, res) => {
   try {
-    // Check if req.body exists first
-    if (!req.body) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing request body"
-      });
-    }
-
     const { email, password } = req.body;
     
-    // Validate that email and password are provided
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required"
-      });
+      return res.status(400).json({ success: false, message: "Email and password are required" });
     }
 
     const user = await User.findOne({ email });
@@ -93,20 +80,25 @@ export const Signin = async (req, res) => {
 
     const token = generateToken(user._id, res);
     
+    // Return user data without password
+    const userData = {
+      _id: user._id,
+      email: user.email,
+      fullName: user.fullName,
+      profilePic: user.profilePic
+    };
+    
     res.status(200).json({
       success: true,
       message: "Login successful",
-      token,
-      user: { ...user._doc, password: undefined }
+      token, // For clients that want to use localStorage
+      user: userData
     });
   } catch (error) {
     console.error("Signin error:", error);
-    // Add more detailed error logging
-    console.error("Error details:", error.stack);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
-
 export const Signout = async (req, res) => {
   try {
     res.clearCookie("token", { 

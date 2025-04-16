@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// Prioritize environment variable, then fallback to hardcoded production URL
 const BASE_URL = import.meta.env.VITE_API_URL || "https://chatspacez.onrender.com";
 
 export const AxiosInstance = axios.create({
@@ -16,9 +15,9 @@ export const AxiosInstance = axios.create({
 // Request interceptor for API calls
 AxiosInstance.interceptors.request.use(
   (config) => {
-    // Get token from localStorage if it exists
+    // Only use localStorage token if we're not using cookies
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;

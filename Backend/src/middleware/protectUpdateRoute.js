@@ -3,7 +3,13 @@ import User from '../models/usermodel.js';
 
 const protect = async (req, res, next) => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "") || req.cookies?.token;
+    // Check Authorization header first
+    let token = req.header("Authorization")?.replace("Bearer ", "");
+    
+    // If no Authorization header, check cookies
+    if (!token && req.cookies?.token) {
+      token = req.cookies.token;
+    }
 
     if (!token) {
       return res.status(401).json({ message: "Not authorized, no token" });

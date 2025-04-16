@@ -20,13 +20,7 @@ export const useAuthStore = create((set, get) => ({
   checkAuth: async () => {
     try {
       set({ isCheckingAuth: true, error: null });
-      const response = await AxiosInstance.get("/auth/check-auth", {
-        withCredentials: true,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
-      });
+      const response = await AxiosInstance.get("/auth/check-auth");
       
       if (response.data) {
         set({ authUser: response.data });
@@ -75,22 +69,14 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+
   signin: async (email, password) => {
     try {
       set({ isLoggingIn: true, error: null });
-      const response = await AxiosInstance.post("/auth/signin", {email, password}, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
+      const response = await AxiosInstance.post("/auth/signin", {email, password});
+  
       if (!response.data?.user) {
         throw new Error("Invalid response format");
-      }
-
-      if (response.data?.token) {
-        localStorage.setItem('token', response.data.token);
       }
       
       set({ authUser: response.data.user });
