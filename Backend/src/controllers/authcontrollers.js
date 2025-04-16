@@ -155,20 +155,18 @@ export const updateProfile = async (req, res) => {
 export const checkAuth = (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ success: false });
     }
-
-    const userData = {
-      ...req.user._doc,
-      password: undefined
-    };
-
-    return res.status(200).json(userData);
-  } catch (error) {
-    console.error("Error in checking authentication:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
+    
+    // Return minimal user data
+    return res.status(200).json({
+      _id: req.user._id,
+      email: req.user.email,
+      fullName: req.user.fullName,
+      profilePic: req.user.profilePic
     });
+  } catch (error) {
+    console.error("Check auth error:", error);
+    return res.status(500).json({ success: false });
   }
 };

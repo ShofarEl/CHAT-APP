@@ -15,30 +15,38 @@ export const useAuthStore = create((set, get) => ({
   socket: null,
   onlineUsers: new Set(),
   error: null,
+  authCheckCompleted: false, // New state to track if initial check is done
 
-  checkAuth: async () => {
-    try {
-      set({ isCheckingAuth: true, error: null });
-      
-      const response = await AxiosInstance.get("/auth/check-auth");
-      
-      if (response.data?._id) {
-        set({ authUser: response.data });
-        await get().connectSocket(response.data._id);
-        return true;
-      }
-      throw new Error("No user data");
-    } catch (error) {
-      console.error("Auth check failed:", error);
-      // Don't clear localStorage here - let the interceptor handle it
-      set({ authUser: null, error: "Please login again" });
-      return false;
-    } finally {
-      set({ isCheckingAuth: false });
+// Update checkAuth method
+checkAuth: async () => {
+  try {
+    set({ isCheckingAuth: true, error: null });
+    
+    const response = await AxiosInstance.get("/auth/check-auth");
+    
+    if (response.data?._id) {
+      set({ 
+        authUser: response.data,
+        authCheckCompleted: true
+      });
+      await get().connectSocket(response.data._id);
+      return true;
     }
-  },
-  
-
+    
+    set({ authCheckCompleted: true });
+    throw new Error("No user data");
+  } catch (error) {
+    console.error("Auth check failed:", error);
+    set({ 
+      authUser: null,
+      authCheckCompleted: true,
+      error: "Please login again" 
+    });
+    return false;
+  } finally {
+    set({ isCheckingAuth: false });
+  }
+},
   signup: async (formData) => {
     try {
       set({ isSigningUp: true, error: null });
