@@ -144,15 +144,19 @@ export const updateProfile = async (req, res) => {
 
 export const checkAuth = (req, res) => {
   try {
-    // Make sure to include all user data needed on the frontend
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const userData = {
       ...req.user._doc,
       password: undefined
     };
-    res.status(200).json(userData);
+
+    return res.status(200).json(userData);
   } catch (error) {
     console.error("Error in checking authentication:", error.message);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Internal server error"
     });
