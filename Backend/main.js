@@ -8,6 +8,18 @@ import { app, server } from "./src/lib/socket.js";
 import authRoutes from "./src/routes/authRoutes.js";
 import msgRoutes from "./src/routes/msgRoutes.js";
 import { connectDB } from "./src/lib/db.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Serve static files
+app.use(express.static(path.join(__dirname, '../Frontend/dist')));
+
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../Frontend/dist', 'index.html'));
+})
 
 const PORT = process.env.PORT || 5000;
 
@@ -25,6 +37,7 @@ app.use(cors({
 
 app.use(express.json()); // This is crucial for parsing JSON request bodies
 app.use(express.urlencoded({ extended: true })); 
+app.use(cookieParser(process.env.JWT_SECRET))
 
 
 // Routes
@@ -49,4 +62,4 @@ server.listen(PORT, () => {
   connectDB().catch(err => {
     console.error("❌ DB connection failed:", err.message);
   });
-});
+})
