@@ -11,42 +11,12 @@ export const useAuthStore = create((set, get) => ({
   isSigningUp: false,
   isLoggingIn: false,
   isUpdatingProfile: false,
-  isCheckingAuth: true,
+  isCheckingAuth: false,
+  authCheckCompleted: false, // New state to track if initial check is done
   socket: null,
   onlineUsers: new Set(),
   error: null,
-  authCheckCompleted: false, // New state to track if initial check is done
 
-// Update checkAuth method
-checkAuth: async () => {
-  try {
-    set({ isCheckingAuth: true, error: null });
-    
-    const response = await AxiosInstance.get("/auth/check-auth");
-    
-    if (response.data?._id) {
-      set({ 
-        authUser: response.data,
-        authCheckCompleted: true
-      });
-      await get().connectSocket(response.data._id);
-      return true;
-    }
-    
-    set({ authCheckCompleted: true });
-    throw new Error("No user data");
-  } catch (error) {
-    console.error("Auth check failed:", error);
-    set({ 
-      authUser: null,
-      authCheckCompleted: true,
-      error: "Please login again" 
-    });
-    return false;
-  } finally {
-    set({ isCheckingAuth: false });
-  }
-},
   signup: async (formData) => {
     try {
       set({ isSigningUp: true, error: null });
@@ -77,54 +47,108 @@ checkAuth: async () => {
       set({ isSigningUp: false });
     }
   },
-
-  signin: async (email, password) => {
-    try {
+    // Improved checkAuth method
+    checkAuth: async () => {
+      // Skip if already checking
+      if (get().isCheckingAuth) return;
+      
+      set({ isCheckingAuth: true, error: null });
+      
+      try {
+        const response = await AxiosInstance.get("/auth/check-auth", {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          }
+        });
+  
+        if (response.data?._id) {
+          set({ 
+            authUser: response.data,
+            authCheckCompleted: true,
+            error: null
+          });
+          await get().connectSocket(response.data._id);
+          return true;
+        }
+        
+        // If no user data but successful response
+        set({ authCheckCompleted: true });
+        return false;
+        
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        
+        // Specific handling for different error types
+        const errorMessage = error.response?.status === 401 
+          ? "Session expired. Please login again."
+          : "Connection error. Please try again.";
+  
+        set({ 
+          authUser: null,
+          authCheckCompleted: true,
+          error: errorMessage
+        });
+        
+        // Clear invalid token
+        localStorage.removeItem('token');
+        return false;
+      } finally {
+        set({ isCheckingAuth: false });
+      }
+    },
+  
+    // Updated signin method to handle state better
+    signin: async (email, password) => {
       set({ isLoggingIn: true, error: null });
       
-      const response = await AxiosInstance.post("/auth/signin", { 
-        email, password 
-      });
+      try {
+        const response = await AxiosInstance.post("/auth/signin", { email, password });
   
-      // Wait briefly for cookie to be set
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Verify auth status
-      const isAuthenticated = await get().checkAuth();
-      
-      if (!isAuthenticated) {
-        throw new Error("Authentication verification failed");
+        if (response.data?.token) {
+          localStorage.setItem('token', response.data.token);
+          
+          // Immediately verify auth status
+          const authSuccess = await get().checkAuth();
+          
+          if (!authSuccess) {
+            throw new Error("Authentication verification failed");
+          }
+          
+          return true;
+        }
+        throw new Error("Invalid server response");
+      } catch (error) {
+        console.error("Login error:", error);
+        set({ 
+          error: error.response?.data?.message || 
+                error.message || 
+                "Login failed. Please try again."
+        });
+        return false;
+      } finally {
+        set({ isLoggingIn: false });
       }
+    },
   
-      toast.success("Login successful!");
-      return true;
-    } catch (error) {
-      console.error("Login error:", error);
-      set({ error: error.response?.data?.message || "Login failed" });
-      toast.error("Login failed. Please try again.");
-      return false;
-    } finally {
-      set({ isLoggingIn: false });
-    }
-  },
-
-  signout: async () => {
-    try {
-      await AxiosInstance.post("/auth/signout", {}, {
-        withCredentials: true
-      });
-      get().disconnectSocket();
-      set({ authUser: null, onlineUsers: new Set() });
-      localStorage.removeItem('token');
-      toast.success("Logged out!");
-      return true;
-    } catch (error) {
-      console.error("Logout error:", error);
-      set({ error: error.message });
-      toast.error(error.response?.data?.message || "Logout failed");
-      return false;
-    }
-  },
+    // Updated signout to clear all states
+    signout: async () => {
+      try {
+        await AxiosInstance.post("/auth/signout");
+        get().disconnectSocket();
+        set({ 
+          authUser: null,
+          onlineUsers: new Set(),
+          authCheckCompleted: false
+        });
+        localStorage.removeItem('token');
+        return true;
+      } catch (error) {
+        console.error("Logout error:", error);
+        set({ error: "Failed to logout properly" });
+        return false;
+      }
+    },
 
   // Socket Methods
   connectSocket: (userId) => {
