@@ -1,7 +1,14 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import Navbar from "./components/Navbar";
+import SignUpPage from './pages/SignUpPage';
+import LogInPage from './pages/LogInPage';
+import SettingsPage from './pages/SettingsPage';
+import HomePage from './pages/HomePage';
+import ProfilePage from './pages/ProfilePage';
+import { ThemeProvider } from './components/ThemeProvider';
+import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
-// ... other imports
 
 const App = () => {
   const location = useLocation();
@@ -58,7 +65,17 @@ const App = () => {
             </ProtectedRoute>
           } />
           
-          {/* Other protected routes */}
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
+              <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+          
           
           <Route path="*" element={
             <Navigate to={authUser ? '/' : '/signin'} replace />
