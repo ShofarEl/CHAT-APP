@@ -11,14 +11,14 @@ export default defineConfig({
       port: 5173,
       proxy: {
         '/api': {
-          target:'https://chatspacev2.onrender.com',
+          target:'https://chatspacez.onrender.com',
           changeOrigin: true,
           secure: false,
           rewrite: path => path.replace(/^\/api/, '')
         }
       },
       '/socket.io': {
-        target: 'https://chatspacev2.onrender.com',
+        target: 'https://chatzspacez.onrender.com',
         changeOrigin: true,
         secure: false,
         ws: true
