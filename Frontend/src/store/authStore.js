@@ -21,7 +21,7 @@ export const useAuthStore = create((set, get) => ({
   signup: async (formData) => {
     try {
       set({ isSigningUp: true, error: null });
-      const response = await AxiosInstance.post("/api/auth/signup", formData, {
+      const response = await AxiosInstance.post("/auth/signup", formData, {
         withCredentials: true
       });
       
@@ -54,7 +54,7 @@ export const useAuthStore = create((set, get) => ({
     set({ isCheckingAuth: true, error: null });
     
     try {
-      const response = await AxiosInstance.get("/api/auth/check-auth", {
+      const response = await AxiosInstance.get("/auth/check-auth", {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         }
@@ -97,7 +97,7 @@ export const useAuthStore = create((set, get) => ({
     set({ isLoggingIn: true, error: null });
     
     try {
-      const response = await AxiosInstance.post("/api/auth/signin", { email, password });
+      const response = await AxiosInstance.post("/auth/signin", { email, password });
 
       if (response.data?.token) {
         localStorage.setItem('token', response.data.token);
@@ -126,7 +126,7 @@ export const useAuthStore = create((set, get) => ({
 
   signout: async () => {
     try {
-      await AxiosInstance.post("/api/auth/signout");
+      await AxiosInstance.post("/auth/signout");
       get().disconnectSocket();
       set({ 
         authUser: null,
