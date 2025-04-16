@@ -12,14 +12,14 @@ import { connectDB } from "./src/lib/db.js";
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(express.json());
-app.use(cookieParser());
 app.use(cors({
   origin: [
-    "https://chatzspace.onrender.com",
-    "http://localhost:5173"
+    "https://chatzspace.onrender.com",  // frontend production domain
+    "http://localhost:5173"             // for local dev (optional)
   ],
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 // Routes
