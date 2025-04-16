@@ -57,7 +57,6 @@ export const useAuthStore = create((set, get) => ({
       try {
         const response = await AxiosInstance.get("/auth/check-auth", {
           headers: {
-            'Cache-Control': 'no-cache',
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
           }
         });
