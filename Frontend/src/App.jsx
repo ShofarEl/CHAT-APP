@@ -9,6 +9,7 @@ import ProfilePage from './pages/ProfilePage';
 import { ThemeProvider } from './components/ThemeProvider';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
+import { useEffect } from 'react';
 
 const App = () => {
   const location = useLocation();
