@@ -8,7 +8,7 @@ import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import { ThemeProvider } from './components/ThemeProvider';
 import ProtectedRoute from './components/ProtectedRoute';
-import { useAuthStore } from './stores/authStore';
+import { useAuthStore } from './store/authStore';
 
 const App = () => {
   const location = useLocation();
