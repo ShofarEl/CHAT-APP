@@ -1,29 +1,57 @@
+// Sidebar.jsx
 import { useEffect } from 'react';
-import { useChatStore} from '../store/chatStore.js';
-import { useAuthStore} from '../store/authStore.js';
+import { useAuthStore } from '../store/authStore.js';
+import { useChatStore } from '../store/chatStore.js';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaComments } from 'react-icons/fa';
+import { FaComments, FaBars, FaTimes } from 'react-icons/fa';
 
-const Sidebar = ({ isMobile }) => {
-  const { users, getUsers, selectedUser, setSelectedUser, loading, unreadCounts } = useChatStore();
+const Sidebar = ({ isMobile, isMobileOpen, onMobileToggle }) => {
+  const { 
+    users, 
+    getUsers, 
+    selectedUser, 
+    setSelectedUser, 
+    loading, 
+    unreadCounts 
+  } = useChatStore();
+  
   const { authUser, socket } = useAuthStore();
 
   useEffect(() => {
     getUsers();
+
     const refreshInterval = setInterval(() => {
-      if (socket?.connected) getUsers();
+      if (socket?.connected) {
+        getUsers();
+      }
     }, 30000);
+
     return () => clearInterval(refreshInterval);
   }, [getUsers, socket]);
 
+  const handleUserSelect = (user) => {
+    setSelectedUser(user);
+  };
+
   return (
-    <div className="h-full flex flex-col bg-base-100">
-      {/* Header */}
-      <div className="p-4 border-b border-base-300">
+    <div className={`
+      h-full flex flex-col bg-base-100 overflow-hidden
+      ${isMobile ? 'w-64' : 'border-r border-base-300'}
+    `}>
+      {/* Header with mobile toggle */}
+      <div className="border-b border-base-300 p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <FaComments className="text-2xl text-primary" />
           <span className="text-xl font-bold text-primary">ChatSpace</span>
         </div>
+        {isMobile && (
+          <button 
+            onClick={onMobileToggle}
+            className="btn btn-ghost btn-sm p-1"
+          >
+            <FaTimes />
+          </button>
+        )}
       </div>
 
       {/* User List */}
@@ -38,7 +66,7 @@ const Sidebar = ({ isMobile }) => {
           </div>
         ) : (
           <AnimatePresence>
-            {users.filter(u => u._id !== authUser?._id).map((user) => (
+            {users.filter(user => user._id !== authUser?._id).map((user) => (
               <motion.div
                 key={user._id}
                 initial={{ opacity: 0, x: -10 }}
@@ -47,28 +75,32 @@ const Sidebar = ({ isMobile }) => {
                 className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer ${
                   selectedUser?._id === user._id ? 'bg-base-200' : 'hover:bg-base-200'
                 }`}
-                onClick={() => setSelectedUser(user)}
+                onClick={() => handleUserSelect(user)}
               >
                 <div className="relative">
                   <img 
                     src={user.profilePic} 
                     alt={user.fullName}
-                    className="w-12 h-12 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover"
                   />
                   <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-base-100 ${
                     user.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
-                  }`}></span>
+                  }`}>
+                    {user.status === 'online' && (
+                      <span className="absolute inset-0 rounded-full bg-green-500 opacity-75 animate-ping"></span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center">
                     <h3 className="font-medium truncate">{user.fullName}</h3>
                     {unreadCounts[user._id] > 0 && (
-                      <span className="badge badge-primary">
+                      <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-primary rounded-full">
                         {unreadCounts[user._id]}
                       </span>
                     )}
                   </div>
-                  <p className={`text-sm truncate ${
+                  <p className={`text-xs truncate ${
                     user.status === 'online' ? 'text-green-500' : 'text-gray-500'
                   }`}>
                     {user.status === 'online' ? 'Online' : 'Offline'}
@@ -79,8 +111,8 @@ const Sidebar = ({ isMobile }) => {
           </AnimatePresence>
         )}
       </div>
-
-      {/* User Profile Footer */}
+      
+      {/* User profile */}
       {authUser && (
         <div className="p-4 border-t border-base-300">
           <div className="flex items-center gap-3">
@@ -93,6 +125,12 @@ const Sidebar = ({ isMobile }) => {
               <h3 className="font-medium truncate">{authUser.fullName}</h3>
               <p className="text-xs text-green-500">Online</p>
             </div>
+            <button 
+              onClick={() => useAuthStore.getState().signout()}
+              className="btn btn-ghost btn-xs"
+            >
+              Logout
+            </button>
           </div>
         </div>
       )}

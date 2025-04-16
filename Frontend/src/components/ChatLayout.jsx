@@ -1,43 +1,55 @@
-import { useState, useEffect } from 'react';
+// ChatLayout.jsx
+import { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import Chat from './Chat';
 import { useChatStore } from '../store/chatStore';
+import { useMediaQuery } from 'react-responsive';
+import { FaArrowLeft } from 'react-icons/fa';
 
 const ChatLayout = () => {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(true);
+  const isMobile = useMediaQuery({ maxWidth: 768 });
   const { selectedUser, setSelectedUser } = useChatStore();
 
-  // Check if mobile
+  // Auto switch view based on selectedUser on mobile
   useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
+    if (isMobile) {
+      setIsMobileOpen(!selectedUser);
+    }
+  }, [selectedUser, isMobile]);
 
-  // DESKTOP: Show sidebar + chat (default)
-  if (!isMobile) {
-    return (
-      <div className="flex h-screen">
-        <div className="w-80 border-r border-base-300">
-          <Sidebar />
+  const handleBack = () => {
+    setSelectedUser(null);
+    setIsMobileOpen(true);
+  };
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar */}
+      {(isMobile ? isMobileOpen : true) && (
+        <div className={`${isMobile ? 'w-full absolute z-20' : 'w-1/3 min-w-[300px] max-w-sm'} h-full`}>
+          <Sidebar 
+            isMobile={isMobile} 
+            isMobileOpen={isMobileOpen} 
+            onMobileToggle={() => setIsMobileOpen(false)} 
+          />
         </div>
-        <div className="flex-1">
+      )}
+
+      {/* Chat */}
+      {(isMobile ? !isMobileOpen : true) && (
+        <div className={`${isMobile ? 'w-full absolute z-10' : 'flex-1'} h-full bg-base-200`}>
+          {/* Back button for mobile */}
+          {isMobile && selectedUser && (
+            <button 
+              onClick={handleBack}
+              className="absolute top-4 left-4 z-30 btn btn-circle btn-sm bg-base-100 shadow-md"
+            >
+              <FaArrowLeft />
+            </button>
+          )}
           <Chat />
         </div>
-      </div>
-    );
-  }
-
-  // MOBILE: Show ONLY ChatList OR Chat (never both!)
-  return (
-    <div className="h-screen">
-      {!selectedUser ? (
-        <Sidebar isMobile={true} />
-      ) : (
-        <Chat onBack={() => setSelectedUser(null)} />
       )}
     </div>
   );
