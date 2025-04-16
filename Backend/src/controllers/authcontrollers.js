@@ -63,14 +63,14 @@ export const Signup = async (req, res) => {
 
 export const Signin = async (req, res) => {
   try {
+    const { email, password } = req.body;
+
     if (!req.body || !req.body.email || !req.body.password) {
       return res.status(400).json({
         success: false,
         message: "Missing login credentials"
       });
     }
-
-    const { email, password } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
