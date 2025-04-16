@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '../store/chatStore.js';
 import { useAuthStore } from '../store/authStore.js';
 import { motion } from 'framer-motion';
-import { IoSend, IoImage, IoCheckmark, IoCheckmarkDone, IoSadOutline } from 'react-icons/io5';
+import { IoSend, IoImage, IoCheckmark, IoCheckmarkDone, IoSadOutline, IoArrowBack } from 'react-icons/io5';
 import debounce from 'lodash/debounce';
 import EmojiPicker from 'emoji-picker-react';
 import { BsEmojiSmile } from 'react-icons/bs';
@@ -36,7 +36,6 @@ const Chat = ({ onBack }) => {
     }, 500)
   ).current;
 
-  // Close emoji picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
@@ -157,11 +156,14 @@ const Chat = ({ onBack }) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with back button on mobile */}
       <div className="p-4 border-b border-base-300 bg-base-100 flex items-center gap-3">
         {isMobile && (
-          <button onClick={onBack} className="btn btn-ghost btn-sm p-1">
-            ←
+          <button 
+            onClick={onBack}
+            className="btn btn-ghost btn-sm p-1"
+            aria-label="Back to conversations"
+          >
+            <IoArrowBack size={18} />
           </button>
         )}
         <div className="relative">
@@ -189,7 +191,6 @@ const Chat = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 bg-base-200/20">
         {isMessagesLoading ? (
           <div className="flex justify-center items-center h-full">
@@ -268,7 +269,6 @@ const Chat = ({ onBack }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
       <div className="p-4 border-t border-base-300 bg-base-100 relative">
         {showEmojiPicker && (
           <div ref={emojiPickerRef} className="absolute bottom-16 left-4 z-10">

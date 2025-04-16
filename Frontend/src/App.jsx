@@ -9,6 +9,7 @@ import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import { ThemeProvider } from './components/ThemeProvider';
 import ProtectedRoute from './components/ProtectedRoute';
+import ChatLayout from './components/ChatLayout.jsx';
 
 const App = () => {
   const { authUser, authCheckCompleted, checkAuth } = useAuthStore();
@@ -57,7 +58,11 @@ const App = () => {
               <ProfilePage />
             </ProtectedRoute>
           } />
-          
+          <Route path="/chat" element={
+        <ProtectedRoute>
+          <ChatLayout />
+        </ProtectedRoute>
+      } />
           <Route path="/settings" element={
             <ProtectedRoute>
               <SettingsPage />
