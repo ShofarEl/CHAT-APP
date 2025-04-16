@@ -1,32 +1,155 @@
 import { useEffect, useRef, useState } from 'react';
-import { useChatStore } from '../store/chatStore.js';
-import { useAuthStore } from '../store/authStore.js';
+import { useChatStore } from '../store/chatStore';
+import { useAuthStore } from '../store/authStore';
 import { motion } from 'framer-motion';
-import { IoSend, IoArrowBack } from 'react-icons/io5';
-import { BsEmojiSmile } from 'react-icons/bs';
+import { 
+  IoSend, 
+  IoImage, 
+  IoCheckmark, 
+  IoCheckmarkDone, 
+  IoSadOutline,
+  IoArrowBack 
+} from 'react-icons/io5';
+import { FaBars } from 'react-icons/fa';
+import debounce from 'lodash/debounce';
 import EmojiPicker from 'emoji-picker-react';
+import { BsEmojiSmile } from 'react-icons/bs';
 
-const Chat = ({ onBack, selectedUser }) => {
+const Chat = () => {
   const [message, setMessage] = useState('');
+  const [image, setImage] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const { messages, sendMessage, getMessages } = useChatStore();
-  const { authUser, onlineUsers } = useAuthStore();
+  const [isMobile, setIsMobile] = useState(false);
+  
+  const {
+    messages,
+    selectedUser,
+    isMessagesLoading,
+    sendMessage,
+    getMessages,
+    typingUsers,
+    setSelectedUser
+  } = useChatStore();
+  
+  const { authUser, socket, sendTypingStatus, onlineUsers } = useAuthStore();
+  
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const messageInputRef = useRef(null);
+  const emojiPickerRef = useRef(null);
+  const filePreviewUrl = image ? URL.createObjectURL(image) : null;
 
+  const debouncedTypingStatus = useRef(
+    debounce((isTyping) => {
+      if (selectedUser?._id) {
+        sendTypingStatus(selectedUser._id, isTyping);
+      }
+    }, 500)
+  ).current;
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Load messages when user is selected
   useEffect(() => {
     if (selectedUser?._id) {
       getMessages(selectedUser._id);
+      setTimeout(() => {
+        messageInputRef.current?.focus();
+      }, 100);
     }
-  }, [selectedUser?._id, getMessages]);
+    return () => {
+      if (selectedUser?._id) {
+        sendTypingStatus(selectedUser._id, false);
+      }
+    };
+  }, [selectedUser?._id, getMessages, sendTypingStatus]);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Clean up typing status
+  useEffect(() => {
+    return () => {
+      debouncedTypingStatus.cancel();
+      if (selectedUser?._id) {
+        sendTypingStatus(selectedUser._id, false);
+      }
+    };
+  }, [debouncedTypingStatus, selectedUser, sendTypingStatus]);
+
+  const handleMessageChange = (e) => {
+    const newMessage = e.target.value;
+    setMessage(newMessage);
+    if (newMessage.length > 0) {
+      debouncedTypingStatus(true);
+    } else {
+      debouncedTypingStatus.cancel();
+      if (selectedUser?._id) {
+        sendTypingStatus(selectedUser._id, false);
+      }
+    }
+  };
+
+  const handleEmojiClick = (emojiData) => {
+    setMessage(prev => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+    messageInputRef.current.focus();
+  };
+
   const handleSend = async () => {
-    if (!message || !selectedUser) return;
-    await sendMessage(selectedUser._id, { text: message });
-    setMessage('');
+    if ((!message && !image) || !selectedUser) return;
+    try {
+      const formData = new FormData();
+      if (message) formData.append('text', message);
+      if (image) formData.append('image', image);
+  
+      await sendMessage(selectedUser._id, formData);
+      setMessage('');
+      setImage(null);
+      debouncedTypingStatus.cancel();
+      if (selectedUser?._id) {
+        sendTypingStatus(selectedUser._id, false);
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
+  };
+  
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB');
+      return;
+    }
+    setImage(file);
   };
 
   const handleKeyPress = (e) => {
@@ -36,19 +159,53 @@ const Chat = ({ onBack, selectedUser }) => {
     }
   };
 
-  const isUserOnline = onlineUsers?.has(selectedUser?._id.toString());
+  const handleBackToContacts = () => {
+    setSelectedUser(null);
+  };
+
+  if (!selectedUser) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <IoSadOutline className="mx-auto text-4xl text-gray-400 mb-2" />
+        <h3 className="text-xl font-medium">Select a chat</h3>
+        <p className="text-gray-500">Choose a conversation from the sidebar</p>
+        {isMobile && (
+          <button 
+            onClick={() => document.querySelector('.sidebar-toggle')?.click()}
+            className="btn btn-primary mt-4"
+          >
+            <FaBars className="mr-2" />
+            Open Contacts
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const groupedMessages = messages.reduce((groups, msg) => {
+    const date = new Date(msg.createdAt).toLocaleDateString();
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(msg);
+    return groups;
+  }, {});
+
+  const isUserTyping = selectedUser?._id ? typingUsers[selectedUser._id] || false : false;
+  const isUserOnline = selectedUser?._id ? (onlineUsers?.has?.(selectedUser._id.toString()) || false) : false;
 
   return (
-    <div className="flex flex-col h-full w-full bg-base-100">
-      {/* Chat header */}
-      <div className="p-3 border-b border-base-300 flex items-center gap-3 bg-base-100 sticky top-0 z-10">
-        <button 
-          onClick={onBack}
-          className="btn btn-ghost btn-circle"
-          aria-label="Back to conversations"
-        >
-          <IoArrowBack size={20} />
-        </button>
+    <div className="flex flex-col h-full">
+      {/* Chat Header with Back Button for Mobile */}
+      <div className="p-4 border-b border-base-300 bg-base-100 flex items-center gap-3">
+        {isMobile && (
+          <button 
+            onClick={handleBackToContacts}
+            className="btn btn-ghost btn-sm p-1"
+          >
+            <IoArrowBack size={20} />
+          </button>
+        )}
         <div className="relative">
           <img 
             src={selectedUser.profilePic} 
@@ -57,63 +214,143 @@ const Chat = ({ onBack, selectedUser }) => {
           />
           <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-base-100 ${
             isUserOnline ? 'bg-green-500' : 'bg-gray-400'
-          }`}></span>
+          }`}>
+            {isUserOnline && (
+              <span className="absolute inset-0 rounded-full bg-green-500 opacity-75 animate-ping"></span>
+            )}
+          </span>
         </div>
-        <div className="flex-1">
+        <div>
           <h3 className="font-medium">{selectedUser.fullName}</h3>
           <p className={`text-xs ${
+            isUserTyping ? 'text-primary animate-pulse' :
             isUserOnline ? 'text-green-500' : 'text-gray-500'
           }`}>
-            {isUserOnline ? 'Online' : 'Offline'}
+            {isUserTyping ? 'Typing...' : isUserOnline ? 'Online' : 'Offline'}
           </p>
         </div>
       </div>
 
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 bg-base-200/10">
-        {messages.length === 0 ? (
-          <div className="flex flex-col justify-center items-center h-full text-center p-6">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <img 
-                src={selectedUser.profilePic} 
-                alt={selectedUser.fullName}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            </div>
-            <h3 className="text-lg font-medium mb-1">{selectedUser.fullName}</h3>
-            <p className="text-gray-500 mb-4">Start your conversation with {selectedUser.fullName.split(' ')[0]}</p>
-            <p className="text-sm text-gray-400">No messages yet</p>
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 bg-base-200/20">
+        {isMessagesLoading ? (
+          <div className="flex justify-center items-center h-full">
+            <span className="loading loading-spinner text-primary"></span>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex justify-center items-center h-full">
+            <p className="text-gray-500">No messages yet 👋</p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <motion.div
-              key={msg._id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex mb-4 ${msg.senderId === authUser?._id ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`max-w-[80%] px-4 py-2 rounded-lg ${
-                msg.senderId === authUser?._id
-                  ? 'bg-primary text-primary-content'
-                  : 'bg-base-300 text-base-content'
-              }`}>
-                <p className="whitespace-pre-wrap break-words">{msg.text}</p>
-                <div className="text-xs opacity-70 text-right mt-1">
-                  {new Date(msg.createdAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
-              </div>
-            </motion.div>
+          Object.entries(groupedMessages).map(([date, dateMessages]) => (
+            <div key={date}>
+              <div className="divider text-xs text-gray-500">{date}</div>
+              {dateMessages.map((msg) => (
+                <motion.div
+                  key={msg._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex mb-4 ${msg.senderId === authUser?._id ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-[80%] px-4 py-2 rounded-lg relative ${
+                    msg.senderId === authUser?._id
+                      ? 'bg-primary text-primary-content'
+                      : 'bg-base-300 text-base-content'
+                  }`}>
+                    {msg.isSending && (
+                      <div className="absolute -top-2 -right-2">
+                        <span className="loading loading-spinner loading-xs"></span>
+                      </div>
+                    )}
+                    {msg.text && <p className="whitespace-pre-wrap break-words">{msg.text}</p>}
+                    {msg.image && (
+                      <img
+                        src={msg.image}
+                        className="mt-2 rounded-lg max-w-full max-h-60 object-contain cursor-pointer"
+                        alt="Sent content"
+                        onClick={() => window.open(msg.image, '_blank')}
+                      />
+                    )}
+                    <div className="text-xs opacity-70 text-right mt-1 flex items-center justify-end gap-1">
+                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                      {msg.senderId === authUser?._id && (
+                        <span className="ml-1">
+                          {msg.isSending ? null : msg.readBy?.length > 0 ? (
+                            <IoCheckmarkDone className="inline text-blue-400" />
+                          ) : msg.delivered ? (
+                            <IoCheckmarkDone className="inline" />
+                          ) : (
+                            <IoCheckmark className="inline" />
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           ))
         )}
+
+        {isUserTyping && (
+          <div className="flex justify-start mb-4">
+            <div className="bg-base-300 px-4 py-2 rounded-lg">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '200ms' }}></div>
+                <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '400ms' }}></div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message input */}
-      <div className="p-3 border-t border-base-300 bg-base-100 sticky bottom-0">
-        <div className="flex gap-2 items-center">
+      {/* Message Input Area */}
+      <div className="p-4 border-t border-base-300 bg-base-100 relative">
+        {showEmojiPicker && (
+          <div ref={emojiPickerRef} className="absolute bottom-16 left-4 z-10">
+            <EmojiPicker 
+              onEmojiClick={handleEmojiClick}
+              width={300}
+              height={350}
+              searchDisabled
+              skinTonesDisabled
+              previewConfig={{ showPreview: false }}
+              theme="dark"
+            />
+          </div>
+        )}
+        
+        {image && (
+          <div className="mb-2 relative">
+            <img
+              src={filePreviewUrl}
+              className="max-w-xs max-h-40 rounded-lg object-contain"
+              alt="Preview"
+            />
+            <button
+              onClick={() => setImage(null)}
+              className="absolute top-1 right-1 btn btn-circle btn-xs btn-error"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+        
+        <div className="flex gap-2">
+          <button
+            onClick={() => fileInputRef.current.click()}
+            className="btn btn-ghost btn-circle"
+            aria-label="Attach image"
+          >
+            <IoImage size={20} />
+          </button>
+          
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             className="btn btn-ghost btn-circle"
@@ -123,38 +360,33 @@ const Chat = ({ onBack, selectedUser }) => {
           </button>
           
           <input
-            type="text"
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            accept="image/*"
+            className="hidden"
+          />
+          
+          <textarea
+            ref={messageInputRef}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleMessageChange}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            className="flex-1 input input-bordered"
+            className="flex-1 input input-bordered min-h-12 pt-2"
+            rows={1}
+            style={{ resize: 'none' }}
           />
           
           <button
             className="btn btn-primary btn-circle"
             onClick={handleSend}
-            disabled={!message}
+            disabled={!message && !image}
             aria-label="Send message"
           >
             <IoSend size={18} />
           </button>
         </div>
-
-        {showEmojiPicker && (
-          <div className="absolute bottom-16 left-0 right-0">
-            <EmojiPicker 
-              onEmojiClick={(emoji) => {
-                setMessage(prev => prev + emoji.emoji);
-                setShowEmojiPicker(false);
-              }}
-              width="100%"
-              height={350}
-              searchDisabled
-              previewConfig={{ showPreview: false }}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
