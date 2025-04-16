@@ -63,12 +63,21 @@ export const Signup = async (req, res) => {
 
 export const Signin = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    if (!req.body || !req.body.email || !req.body.password) {
+    // Check if req.body exists first
+    if (!req.body) {
       return res.status(400).json({
         success: false,
-        message: "Missing login credentials"
+        message: "Missing request body"
+      });
+    }
+
+    const { email, password } = req.body;
+    
+    // Validate that email and password are provided
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required"
       });
     }
 
@@ -83,7 +92,7 @@ export const Signin = async (req, res) => {
     }
 
     const token = generateToken(user._id, res);
-
+    
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -92,6 +101,8 @@ export const Signin = async (req, res) => {
     });
   } catch (error) {
     console.error("Signin error:", error);
+    // Add more detailed error logging
+    console.error("Error details:", error.stack);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
