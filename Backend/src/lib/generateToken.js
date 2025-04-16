@@ -3,19 +3,22 @@ import jwt from "jsonwebtoken";
 export const generateToken = (userId, res) => {
     const token = jwt.sign(
         { userId }, 
-        process.env.JWT_SECRET || "fallback-secret-key",
+        process.env.JWT_SECRET,
         { expiresIn: "7d" }
     );
     
-    // Set the cookie for API auth
+    // Production cookie settings
+    const isProduction = process.env.NODE_ENV === "production";
+    const cookieDomain = isProduction ? ".chatspacez.onrender.com" : undefined;
+
     res.cookie("token", token, {
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: isProduction ? "none" : "lax",
+        secure: isProduction,
+        domain: cookieDomain,
         path: "/",
-        domain: process.env.NODE_ENV === "production" ? ".chatspacez.onrender.com" : undefined
     });
 
     return token;
-}
+};

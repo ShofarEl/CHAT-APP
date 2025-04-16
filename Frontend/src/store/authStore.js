@@ -16,27 +16,28 @@ export const useAuthStore = create((set, get) => ({
   onlineUsers: new Set(),
   error: null,
 
-  // Auth Methods
   checkAuth: async () => {
     try {
       set({ isCheckingAuth: true, error: null });
+      
       const response = await AxiosInstance.get("/auth/check-auth");
       
-      if (response.data) {
+      if (response.data?._id) {
         set({ authUser: response.data });
-        get().connectSocket(response.data._id);
+        await get().connectSocket(response.data._id);
         return true;
       }
       throw new Error("No user data");
     } catch (error) {
       console.error("Auth check failed:", error);
-      set({ authUser: null, error: error.message || "Authentication failed" });
-      localStorage.removeItem('token');
+      // Don't clear localStorage here - let the interceptor handle it
+      set({ authUser: null, error: "Please login again" });
       return false;
     } finally {
       set({ isCheckingAuth: false });
     }
   },
+  
 
   signup: async (formData) => {
     try {
@@ -69,28 +70,30 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-
   signin: async (email, password) => {
     try {
       set({ isLoggingIn: true, error: null });
-      const response = await AxiosInstance.post("/auth/signin", {email, password});
+      
+      const response = await AxiosInstance.post("/auth/signin", { 
+        email, password 
+      });
   
-      if (!response.data?.user) {
-        throw new Error("Invalid response format");
+      // Wait briefly for cookie to be set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Verify auth status
+      const isAuthenticated = await get().checkAuth();
+      
+      if (!isAuthenticated) {
+        throw new Error("Authentication verification failed");
       }
-      
-      set({ authUser: response.data.user });
-      
-      // Connect socket after setting auth user
-      await get().connectSocket(response.data.user._id);
-      
+  
       toast.success("Login successful!");
       return true;
     } catch (error) {
       console.error("Login error:", error);
-      set({ error: error.response?.data?.message || error.message || "Login failed" });
-      localStorage.removeItem('token');
-      toast.error(error.response?.data?.message || "Login failed");
+      set({ error: error.response?.data?.message || "Login failed" });
+      toast.error("Login failed. Please try again.");
       return false;
     } finally {
       set({ isLoggingIn: false });
