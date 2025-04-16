@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from './stores/authStore';
+import { useAuthStore } from './store/authStore';
 // ... other imports
 
 const App = () => {
