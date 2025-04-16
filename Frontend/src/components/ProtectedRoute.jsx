@@ -5,13 +5,18 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const ProtectedRoute = ({ children }) => {
-  const { authUser, isCheckingAuth, error } = useAuthStore();
+  const { authUser, isCheckingAuth, error, checkAuth } = useAuthStore();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
+  // 🚀 This triggers the auth check once on component mount
   useEffect(() => {
-    if (!initialCheckDone && !isCheckingAuth && !authUser) {
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!isCheckingAuth && !authUser && !initialCheckDone) {
       setInitialCheckDone(true);
       navigate('/signin', {
         replace: true,
@@ -20,13 +25,14 @@ const ProtectedRoute = ({ children }) => {
     }
   }, [authUser, isCheckingAuth, initialCheckDone, navigate, location]);
 
-  if (error) {
-    toast.error("Session expired. Please login again.");
-    navigate('/signin', { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (error) {
+      toast.error("Session expired. Please login again.");
+      navigate('/signin', { replace: true });
+    }
+  }, [error, navigate]);
 
-  if (!initialCheckDone || isCheckingAuth) {
+  if (isCheckingAuth || (!authUser && !initialCheckDone)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-base-100">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
