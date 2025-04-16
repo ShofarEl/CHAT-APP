@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { useAuthStore, useChatStore } from '../store';
+import { useAuthStore } from '../store/authStore';
+import { useChatStore } from '../store/chatStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaComments } from 'react-icons/fa';
 
