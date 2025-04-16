@@ -75,10 +75,10 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  signin: async (credentials) => {
+  signin: async (email, password) => {
     try {
       set({ isLoggingIn: true, error: null });
-      const response = await AxiosInstance.post("/auth/signin", credentials, {
+      const response = await AxiosInstance.post("/auth/signin", {email, password}, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json'

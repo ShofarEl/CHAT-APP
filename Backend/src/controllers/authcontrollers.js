@@ -63,6 +63,13 @@ export const Signup = async (req, res) => {
 
 export const Signin = async (req, res) => {
   try {
+    if (!req.body || !req.body.email || !req.body.password) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing login credentials"
+      });
+    }
+
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
@@ -80,7 +87,7 @@ export const Signin = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Login successful",
-      token, // Include token in response
+      token,
       user: { ...user._doc, password: undefined }
     });
   } catch (error) {
