@@ -1,11 +1,10 @@
-// Sidebar.jsx
 import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore.js';
 import { useChatStore } from '../store/chatStore.js';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaComments, FaBars, FaTimes } from 'react-icons/fa';
+import { FaComments } from 'react-icons/fa';
 
-const Sidebar = ({ isMobile, isMobileOpen, onMobileToggle }) => {
+const Sidebar = ({ isMobile }) => {
   const { 
     users, 
     getUsers, 
@@ -34,24 +33,20 @@ const Sidebar = ({ isMobile, isMobileOpen, onMobileToggle }) => {
   };
 
   return (
-    <div className={`
-      h-full flex flex-col bg-base-100 overflow-hidden
-      ${isMobile ? 'w-64' : 'border-r border-base-300'}
-    `}>
-      {/* Header with mobile toggle */}
-      <div className="border-b border-base-300 p-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <FaComments className="text-2xl text-primary" />
-          <span className="text-xl font-bold text-primary">ChatSpace</span>
+    <div className="h-full flex flex-col bg-base-100 overflow-hidden">
+      {/* Header */}
+      <div className="border-b border-base-300 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FaComments className="text-2xl text-primary" />
+            <span className="text-xl font-bold text-primary">ChatSpace</span>
+          </div>
+          {isMobile && (
+            <div className="text-sm text-gray-500">
+              {users?.length || 0} contacts
+            </div>
+          )}
         </div>
-        {isMobile && (
-          <button 
-            onClick={onMobileToggle}
-            className="btn btn-ghost btn-sm p-1"
-          >
-            <FaTimes />
-          </button>
-        )}
       </div>
 
       {/* User List */}
@@ -69,10 +64,11 @@ const Sidebar = ({ isMobile, isMobileOpen, onMobileToggle }) => {
             {users.filter(user => user._id !== authUser?._id).map((user) => (
               <motion.div
                 key={user._id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer ${
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                whileTap={{ scale: 0.98 }}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer mb-1 ${
                   selectedUser?._id === user._id ? 'bg-base-200' : 'hover:bg-base-200'
                 }`}
                 onClick={() => handleUserSelect(user)}
@@ -81,7 +77,7 @@ const Sidebar = ({ isMobile, isMobileOpen, onMobileToggle }) => {
                   <img 
                     src={user.profilePic} 
                     alt={user.fullName}
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-12 h-12 rounded-full object-cover"
                   />
                   <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-base-100 ${
                     user.status === 'online' ? 'bg-green-500' : 'bg-gray-400'

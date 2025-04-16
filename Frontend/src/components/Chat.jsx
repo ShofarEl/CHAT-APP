@@ -6,6 +6,7 @@ import { IoSend, IoImage, IoCheckmark, IoCheckmarkDone, IoSadOutline } from 'rea
 import debounce from 'lodash/debounce';
 import EmojiPicker from 'emoji-picker-react';
 import { BsEmojiSmile } from 'react-icons/bs';
+import { useMediaQuery } from 'react-responsive';
 
 const Chat = () => {
   const [message, setMessage] = useState('');
@@ -24,7 +25,9 @@ const Chat = () => {
   const fileInputRef = useRef(null);
   const messageInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const filePreviewUrl = image ? URL.createObjectURL(image) : null;
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const debouncedTypingStatus = useRef(
     debounce((isTyping) => {
@@ -50,7 +53,7 @@ const Chat = () => {
       getMessages(selectedUser._id);
       setTimeout(() => {
         messageInputRef.current?.focus();
-      }, 100);
+      }, 300);
     }
     return () => {
       if (selectedUser?._id) {
@@ -60,7 +63,9 @@ const Chat = () => {
   }, [selectedUser?._id, getMessages, sendTypingStatus]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -155,6 +160,7 @@ const Chat = () => {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Chat Header - Modified for better mobile UX */}
       <div className="p-4 border-b border-base-300 bg-base-100 flex items-center gap-3">
         <div className="relative">
           <img 
@@ -181,7 +187,11 @@ const Chat = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 bg-base-200/20">
+      {/* Chat Messages */}
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto p-4 bg-base-200/20"
+      >
         {isMessagesLoading ? (
           <div className="flex justify-center items-center h-full">
             <span className="loading loading-spinner text-primary"></span>
@@ -259,12 +269,16 @@ const Chat = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Message Input */}
       <div className="p-4 border-t border-base-300 bg-base-100 relative">
         {showEmojiPicker && (
-          <div ref={emojiPickerRef} className="absolute bottom-16 left-4 z-10">
+          <div 
+            ref={emojiPickerRef} 
+            className={`absolute ${isMobile ? 'bottom-20 right-4' : 'bottom-16 left-4'} z-10`}
+          >
             <EmojiPicker 
               onEmojiClick={handleEmojiClick}
-              width={300}
+              width={isMobile ? 280 : 300}
               height={350}
               searchDisabled
               skinTonesDisabled
