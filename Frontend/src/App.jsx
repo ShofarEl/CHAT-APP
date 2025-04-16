@@ -8,18 +8,47 @@ import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import { ThemeProvider } from './components/ThemeProvider';
 import ProtectedRoute from './components/ProtectedRoute';
+import { useAuthStore } from './stores/authStore';
 
 const App = () => {
   const location = useLocation();
+  const { authUser, isCheckingAuth } = useAuthStore();
   const showNavbar = !['/signin', '/signup'].includes(location.pathname);
+
+  // Redirect authenticated users away from auth pages
+  const AuthRedirect = ({ children }) => {
+    if (authUser) {
+      const from = location.state?.from?.pathname || '/';
+      return <Navigate to={from} replace />;
+    }
+    return children;
+  };
+
+  if (isCheckingAuth) {
+    return (
+      <ThemeProvider>
+        <div className="flex justify-center items-center h-screen">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-base-100 text-base-content">
         {showNavbar && <Navbar />}
         <Routes>
-          <Route path="/signin" element={<LogInPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/signin" element={
+            <AuthRedirect>
+              <LogInPage />
+            </AuthRedirect>
+          } />
+          <Route path="/signup" element={
+            <AuthRedirect>
+              <SignUpPage />
+            </AuthRedirect>
+          } />
           
           <Route path="/" element={
             <ProtectedRoute>
@@ -38,7 +67,7 @@ const App = () => {
           } />
           
           <Route path="*" element={
-            <Navigate to="/signin" replace />
+            <Navigate to={authUser ? '/' : '/signin'} replace />
           } />
         </Routes>
       </div>
