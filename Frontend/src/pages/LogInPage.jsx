@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Mail, Lock, ArrowRight, MessageSquare } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { AxiosInstance } from '../lib/Axios';
 import { useNavigate, Link } from 'react-router-dom';
 
 const LogInPage = () => {
@@ -10,7 +9,7 @@ const LogInPage = () => {
     email: '',
     password: ''
   });
-  const { isLoggingIn, signin, credentials } = useAuthStore();
+  const { isLoggingIn, signin } = useAuthStore();
   const [fadeIn, setFadeIn] = useState(false);
   const navigate = useNavigate();
 
@@ -27,7 +26,8 @@ const LogInPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const success = await signin(formData);
+      // Pass the email and password separately instead of the whole formData object
+      const success = await signin(formData.email, formData.password);
       if (success) {
         navigate('/');
       } 
