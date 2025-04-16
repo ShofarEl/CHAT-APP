@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useChatStore } from '../store/chatStore';
+import { useChatStore} from '../store/chatStore.js';
+import { useAuthStore} from '../store/authStore.js';
+
 import { motion } from 'framer-motion';
 import { 
   IoSend, 
