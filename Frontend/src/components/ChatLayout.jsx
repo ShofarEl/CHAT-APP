@@ -8,42 +8,36 @@ import Chat from './Chat';
 const ChatLayout = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const isMobile = useMediaQuery({ maxWidth: 768 });
-  const [showSidebar, setShowSidebar] = useState(!isMobile);
 
   const handleSelectUser = (user) => {
     setSelectedUser(user);
-    if (isMobile) setShowSidebar(false);
   };
 
   const handleBackToConversations = () => {
     setSelectedUser(null);
-    setShowSidebar(true);
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-base-100">
       <AuthenticatedNavbar />
       
-      <div className="flex flex-1 overflow-hidden bg-base-100">
+      <div className="flex flex-1 overflow-hidden">
         {isMobile ? (
-          <>
-            {showSidebar && (
-              <Sidebar 
-                onSelectUser={handleSelectUser} 
-                selectedUser={selectedUser}
-              />
-            )}
-            {selectedUser && !showSidebar && (
-              <Chat 
-                onBack={handleBackToConversations} 
-                selectedUser={selectedUser}
-              />
-            )}
-          </>
+          selectedUser ? (
+            <Chat 
+              onBack={handleBackToConversations} 
+              selectedUser={selectedUser}
+            />
+          ) : (
+            <Sidebar 
+              onSelectUser={handleSelectUser}
+              selectedUser={selectedUser}
+            />
+          )
         ) : (
           <>
             <Sidebar 
-              onSelectUser={handleSelectUser} 
+              onSelectUser={handleSelectUser}
               selectedUser={selectedUser}
             />
             {selectedUser ? (
