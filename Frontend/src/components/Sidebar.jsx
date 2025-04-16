@@ -2,9 +2,10 @@ import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore.js';
 import { useChatStore } from '../store/chatStore.js';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaComments } from 'react-icons/fa';
+import { FaComments, FaBars, FaTimes } from 'react-icons/fa';
+import { useMediaQuery } from 'react-responsive';
 
-const Sidebar = () => {
+const Sidebar = ({ isMobileOpen, onMobileToggle }) => {
   const { 
     users, 
     getUsers, 
@@ -15,6 +16,7 @@ const Sidebar = () => {
   } = useChatStore();
   
   const { authUser, socket } = useAuthStore();
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   useEffect(() => {
     getUsers();
@@ -23,19 +25,39 @@ const Sidebar = () => {
       if (socket?.connected) {
         getUsers();
       }
-    }, 30000); // Refresh user list every 30 seconds
+    }, 30000);
 
     return () => clearInterval(refreshInterval);
   }, [getUsers, socket]);
 
+  // Close sidebar when a user is selected on mobile
+  useEffect(() => {
+    if (isMobile && selectedUser) {
+      onMobileToggle();
+    }
+  }, [selectedUser, isMobile, onMobileToggle]);
+
   return (
-    <div className="h-full flex flex-col bg-base-100 overflow-hidden border-r border-base-300">
-      {/* Header */}
-      <div className="border-b border-base-300 p-4">
+    <div className={`
+      h-full flex flex-col bg-base-100 overflow-hidden border-r border-base-300
+      ${isMobile ? 'fixed inset-y-0 z-50 w-64 transform' : ''}
+      ${isMobile && !isMobileOpen ? '-translate-x-full' : ''}
+      ${isMobile ? 'transition-transform duration-300 ease-in-out' : ''}
+    `}>
+      {/* Header with mobile toggle */}
+      <div className="border-b border-base-300 p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <FaComments className="text-2xl text-primary" />
           <span className="text-xl font-bold text-primary">ChatSpace</span>
         </div>
+        {isMobile && (
+          <button 
+            onClick={onMobileToggle}
+            className="btn btn-ghost btn-sm p-1"
+          >
+            {isMobileOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        )}
       </div>
 
       {/* User List */}
@@ -56,7 +78,7 @@ const Sidebar = () => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer ${
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer ${
                   selectedUser?._id === user._id ? 'bg-base-200' : 'hover:bg-base-200'
                 }`}
                 onClick={() => setSelectedUser(user)}

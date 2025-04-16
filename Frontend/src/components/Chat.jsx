@@ -6,8 +6,9 @@ import { IoSend, IoImage, IoCheckmark, IoCheckmarkDone, IoSadOutline } from 'rea
 import debounce from 'lodash/debounce';
 import EmojiPicker from 'emoji-picker-react';
 import { BsEmojiSmile } from 'react-icons/bs';
+import { useMediaQuery } from 'react-responsive';
 
-const Chat = () => {
+const Chat = ({ onBack }) => {
   const [message, setMessage] = useState('');
   const [image, setImage] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -25,6 +26,7 @@ const Chat = () => {
   const messageInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
   const filePreviewUrl = image ? URL.createObjectURL(image) : null;
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const debouncedTypingStatus = useRef(
     debounce((isTyping) => {
@@ -155,7 +157,13 @@ const Chat = () => {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Header with back button on mobile */}
       <div className="p-4 border-b border-base-300 bg-base-100 flex items-center gap-3">
+        {isMobile && (
+          <button onClick={onBack} className="btn btn-ghost btn-sm p-1">
+            ←
+          </button>
+        )}
         <div className="relative">
           <img 
             src={selectedUser.profilePic} 
@@ -181,6 +189,7 @@ const Chat = () => {
         </div>
       </div>
 
+      {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 bg-base-200/20">
         {isMessagesLoading ? (
           <div className="flex justify-center items-center h-full">
@@ -259,12 +268,13 @@ const Chat = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input area */}
       <div className="p-4 border-t border-base-300 bg-base-100 relative">
         {showEmojiPicker && (
           <div ref={emojiPickerRef} className="absolute bottom-16 left-4 z-10">
             <EmojiPicker 
               onEmojiClick={handleEmojiClick}
-              width={300}
+              width={isMobile ? '100%' : 300}
               height={350}
               searchDisabled
               skinTonesDisabled
