@@ -22,6 +22,11 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
+
+app.use(express.json()); // This is crucial for parsing JSON request bodies
+app.use(express.urlencoded({ extended: true })); 
+
+
 // Routes
 app.get("/", (req, res) => res.send("Chat server is running"));
 app.use("/api/auth", authRoutes);
