@@ -1,4 +1,4 @@
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../store/authStore.js';
 import AuthenticatedNavbar from './authenticatedNavBar';
 import UnauthenticatedNavbar from './UnAuthenticatedNavBar';
 

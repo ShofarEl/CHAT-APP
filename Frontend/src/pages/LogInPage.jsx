@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Mail, Lock, ArrowRight, MessageSquare } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../store/authStore.js';
 import { useNavigate, Link } from 'react-router-dom';
 
 const LogInPage = () => {

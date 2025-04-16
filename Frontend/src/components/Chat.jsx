@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useChatStore } from '../store/chatStore';
-import { useAuthStore } from '../store/authStore';
+import { useChatStore } from '../store/chatStore.js';
+import { useAuthStore } from '../store/authStore.js';
 import { motion } from 'framer-motion';
 import { IoSend, IoImage, IoCheckmark, IoCheckmarkDone, IoSadOutline } from 'react-icons/io5';
 import debounce from 'lodash/debounce';

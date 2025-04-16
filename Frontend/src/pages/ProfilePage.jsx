@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Camera, User, Mail, Calendar } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../store/authStore.js';
 import toast, { Toaster } from 'react-hot-toast';
 
 const ProfilePage = () => {
