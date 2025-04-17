@@ -54,9 +54,11 @@ const SignupPage = () => {
     if (!validateForm()) return;
 
     try {
-      await signup(formData); // ✅ Call signup action from store
+      const success = await signup(formData); // ✅ Call signup action from store
+      if(success){
+      toast.success("signup successful!")
       navigate('/signin')
-      toast.success("signin successful!")
+      }
     } catch (error) {
       const errorMessage = error?.response?.data?.message || error.message || 'Signin failed. Please try again.';
       toast.error(errorMessage, {

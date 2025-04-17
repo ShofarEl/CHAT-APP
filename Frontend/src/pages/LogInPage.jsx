@@ -29,7 +29,9 @@ const LogInPage = () => {
       // Pass the email and password separately instead of the whole formData object
       const success = await signin(formData.email, formData.password);
       if (success) {
+        toast.success("Login Sucessful!")
         navigate('/');
+      
       } 
     } catch (error) {
       const errorMessage = error?.response?.data?.message || error.message || 'Signin failed. Please try again.';
